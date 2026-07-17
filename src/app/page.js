@@ -1,65 +1,152 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import Link from 'next/link';
+import useSWR from 'swr';
+import { CheckCircle2, Circle, Megaphone, Plus, Users } from 'lucide-react';
+import AuthGuard from '@/app/components/AuthGuard';
+import Header from '@/app/components/Header';
+import CreateAnnouncementModal from '@/app/components/CreateAnnouncementModal';
+import { useUser } from '@/lib/useUser';
+import { fetchAnnouncements } from '@/lib/announcementsApi';
+
+function useAnnouncements() {
+  const { data, error, isLoading, mutate } = useSWR('/announcements', async () => {
+    const res = await fetchAnnouncements();
+    return res.data ?? [];
+  });
+  return { announcements: data ?? [], isLoading, isError: error, mutate };
+}
+
+function timeAgo(date) {
+  const diffMs = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <AuthGuard>
+      <Header />
+      <AnnouncementBoard />
+    </AuthGuard>
+  );
+}
+
+function AnnouncementBoard() {
+  const { isAdmin } = useUser();
+  const { announcements, isLoading, mutate } = useAnnouncements();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <main className="mx-auto w-full max-w-2xl flex-1 px-3 py-4 sm:px-4 sm:py-6">
+        <div className="flex flex-col gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-100" />
+          ))}
         </div>
       </main>
-    </div>
+    );
+  }
+
+  if (announcements.length === 0) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+          <Megaphone className="h-6 w-6 text-black" />
+        </div>
+        <h1 className="mt-4 text-lg font-semibold text-black">No announcements yet</h1>
+        <p className="mt-1 max-w-xs text-sm text-gray-500">
+          {isAdmin
+            ? 'Publish your first announcement so your team can acknowledge it.'
+            : 'Check back soon — nothing has been posted yet.'}
+        </p>
+        {isAdmin && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="mt-5 flex items-center gap-1.5 cursor-pointer rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Create announcement
+          </button>
+        )}
+
+        <CreateAnnouncementModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onCreated={mutate}
+        />
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-2xl flex-1 px-3 py-4 sm:px-4 sm:py-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-black">Announcements</h1>
+        {isAdmin && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1.5 cursor-pointer rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {announcements.map((a) => (
+          <div
+            key={a._id}
+            className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 transition hover:border-gray-400 sm:flex-row sm:items-center sm:justify-between sm:p-4"
+          >
+            <Link href={`/announcements/${a._id}`} className="min-w-0 flex-1 cursor-pointer">
+              <p className="truncate font-medium text-black">{a.title}</p>
+              <p className="mt-0.5 text-xs text-gray-400">{timeAgo(a.createdAt)}</p>
+            </Link>
+
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {a.isAcknowledgedByMe ? (
+                <span className="flex items-center gap-1.5 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Acknowledged
+                </span>
+              ) : (
+                <Link
+                  href={`/announcements/${a._id}`}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-black hover:text-black"
+                >
+                  <Circle className="h-3.5 w-3.5" />
+                  Pending
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href={`/announcements/${a._id}/acknowledgements`}
+                  title="View acknowledgements"
+                  className="cursor-pointer rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-black"
+                >
+                  <Users className="h-4 w-4" />
+                </Link>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <CreateAnnouncementModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={mutate}
+      />
+    </main>
   );
 }
