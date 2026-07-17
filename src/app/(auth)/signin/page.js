@@ -102,12 +102,12 @@ export default function SignInPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            Announcements
+            Sign in to Acknowledge
           </h1>
           <p className="mt-1 text-sm text-zinc-500">Stay in the loop, in seconds.</p>
         </div>
 
-        <div className="mb-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        {/* <div className="mb-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
           <ul className="flex flex-col gap-3.5">
             {TIPS.map(({ icon: Icon, text }, i) => (
               <li key={i} className="flex items-start gap-3">
@@ -118,7 +118,7 @@ export default function SignInPage() {
               </li>
             ))}
           </ul>
-        </div>
+        </div> */}
 
         <button
           type="button"
