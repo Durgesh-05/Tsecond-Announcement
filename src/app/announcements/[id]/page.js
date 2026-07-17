@@ -49,7 +49,7 @@ function AnnouncementDetail({ id }) {
   const handleConfirm = async (selfieBlob) => {
     setSubmitting(true);
     try {
-      await toast.promise(acknowledgeAnnouncementApi(id, { selfie: selfieBlob }), {
+      await toast.promise(acknowledgeAnnouncementApi(id, { selfie: selfieBlob, consent: agreed }), {
         loading: 'Submitting acknowledgement…',
         success: 'Acknowledged!',
         error: (err) => getApiErrorMessage(err, 'Failed to acknowledge'),

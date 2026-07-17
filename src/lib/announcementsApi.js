@@ -15,10 +15,10 @@ export async function createAnnouncementApi(payload) {
   return res.data;
 }
 
-export async function acknowledgeAnnouncementApi(id, { selfie }) {
+export async function acknowledgeAnnouncementApi(id, { selfie, consent }) {
   const formData = new FormData();
   formData.append('selfie', selfie, 'selfie.jpg');
-  formData.append('consent', 'true');
+  formData.append('consent', String(consent));
 
   const res = await apiClient.post(`/announcements/${id}/acknowledge`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

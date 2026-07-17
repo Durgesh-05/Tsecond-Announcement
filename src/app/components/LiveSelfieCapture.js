@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -21,6 +22,18 @@ export default function LiveSelfieCapture({ disabled, submitting, onConfirm }) {
   useEffect(() => {
     return () => stopStream();
   }, []);
+
+  useEffect(() => {
+    if (!disabled) return;
+    stopStream();
+    setPhase('start');
+    setCapturedBlob(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setError(null);
+  }, [disabled]);
 
   // The <video> element only mounts once phase becomes 'live', so the stream
   // must be attached here (after render) rather than immediately after
