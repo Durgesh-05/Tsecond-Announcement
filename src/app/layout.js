@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Tsecond Announcements",
+  title: "Announcements | Tsecond",
   description: "Acknowledge company announcements in a tap.",
 };
 
