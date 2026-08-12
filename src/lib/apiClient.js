@@ -1,6 +1,12 @@
 'use client';
 
 import axios from 'axios';
+import {
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  setTokens,
+  clearTokens,
+} from './tokenStore';
 
 const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -10,12 +16,37 @@ const refreshClient = axios.create({ baseURL, withCredentials: true });
 
 let refreshPromise = null;
 
+function withAuthHeaders(config) {
+  const token = getStoredAccessToken();
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}
+
+apiClient.interceptors.request.use(withAuthHeaders);
+
+function captureRotatedTokens(response) {
+  const accessToken = response?.headers?.['x-tsecond-token'];
+  const refreshToken = response?.headers?.['x-tsecond-refresh-token'];
+  if (accessToken || refreshToken) setTokens({ accessToken, refreshToken });
+}
+
 export async function refreshAccessToken() {
   if (!refreshPromise) {
+    const storedRefresh = getStoredRefreshToken();
+
     refreshPromise = refreshClient
-      .post('/auth/refresh')
-      .then((res) => res.data?.data?.accessToken ?? null)
-      .catch(() => null)
+      .post('/auth/refresh', {}, storedRefresh ? { headers: { 'X-Refresh-Token': storedRefresh } } : undefined)
+      .then((res) => {
+        const { accessToken, refreshToken } = res.data?.data ?? {};
+        if (accessToken || refreshToken) setTokens({ accessToken, refreshToken });
+        return accessToken ?? null;
+      })
+      .catch(() => {
+        clearTokens();
+        return null;
+      })
       .finally(() => {
         refreshPromise = null;
       });
@@ -24,10 +55,15 @@ export async function refreshAccessToken() {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    captureRotatedTokens(response);
+    return response;
+  },
   async (error) => {
     const status = error.response?.status;
     const originalConfig = error.config;
+
+    captureRotatedTokens(error.response);
 
     if (
       status === 401 &&
