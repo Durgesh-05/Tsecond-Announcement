@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { CheckCircle2, Circle, Megaphone, Plus, Users } from 'lucide-react';
+import { CheckCircle2, Megaphone, Plus } from 'lucide-react';
 import AuthGuard from '@/app/components/AuthGuard';
 import Header from '@/app/components/Header';
 import CreateAnnouncementModal from '@/app/components/CreateAnnouncementModal';
+import StatusBadge from '@/app/components/StatusBadge';
 import { useUser } from '@/lib/useUser';
 import { fetchAnnouncements } from '@/lib/announcementsApi';
+import { formatDateTime, timeAgo } from '@/lib/formatDate';
 
 function useAnnouncements() {
   const { data, error, isLoading, mutate } = useSWR('/announcements', async () => {
@@ -16,17 +18,6 @@ function useAnnouncements() {
     return res.data ?? [];
   });
   return { announcements: data ?? [], isLoading, isError: error, mutate };
-}
-
-function timeAgo(date) {
-  const diffMs = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 export default function HomePage() {
@@ -109,34 +100,20 @@ function AnnouncementBoard() {
           >
             <Link href={`/announcements/${a._id}`} className="min-w-0 flex-1 cursor-pointer">
               <p className="truncate font-medium text-black">{a.title}</p>
-              <p className="mt-0.5 text-xs text-gray-400">{timeAgo(a.createdAt)}</p>
+              <p className="mt-0.5 text-xs text-gray-400">
+                {timeAgo(a.createdAt)}
+                {!a.isClosed && a.closesAt && ` · Closes ${formatDateTime(a.closesAt)}`}
+              </p>
             </Link>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {a.isAcknowledgedByMe ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {a.isAcknowledgedByMe && (
                 <span className="flex items-center gap-1.5 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Acknowledged
                 </span>
-              ) : (
-                <Link
-                  href={`/announcements/${a._id}`}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-black hover:text-black"
-                >
-                  <Circle className="h-3.5 w-3.5" />
-                  Pending
-                </Link>
               )}
-
-              {isAdmin && (
-                <Link
-                  href={`/announcements/${a._id}/acknowledgements`}
-                  title="View acknowledgements"
-                  className="cursor-pointer rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-black"
-                >
-                  <Users className="h-4 w-4" />
-                </Link>
-              )}
+              <StatusBadge isClosed={a.isClosed} />
             </div>
           </div>
         ))}

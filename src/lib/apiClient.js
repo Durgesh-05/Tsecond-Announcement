@@ -48,10 +48,19 @@ apiClient.interceptors.response.use(
   },
 );
 
+function firstDetailMessage(details) {
+  if (!details || typeof details !== 'object') return null;
+  for (const value of Object.values(details)) {
+    if (typeof value === 'string' && value.trim()) return value;
+    if (Array.isArray(value) && typeof value[0] === 'string' && value[0].trim()) return value[0];
+  }
+  return null;
+}
+
 export function getApiErrorMessage(error, fallback = 'Something went wrong') {
   if (axios.isAxiosError(error)) {
-    const msg = error.response?.data?.message;
-    return msg || fallback;
+    const data = error.response?.data;
+    return firstDetailMessage(data?.error?.details) || data?.message || fallback;
   }
   if (error instanceof Error) return error.message || fallback;
   return fallback;

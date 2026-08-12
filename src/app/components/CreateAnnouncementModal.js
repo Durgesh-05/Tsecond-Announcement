@@ -5,10 +5,12 @@ import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createAnnouncementApi } from '@/lib/announcementsApi';
 import { getApiErrorMessage } from '@/lib/apiClient';
+import { toDateTimeLocalValue } from '@/lib/formatDate';
 
 export default function CreateAnnouncementModal({ open, onClose, onCreated }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [closesAt, setClosesAt] = useState('');
   const [creating, setCreating] = useState(false);
 
   if (!open) return null;
@@ -16,6 +18,7 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }) {
   const reset = () => {
     setTitle('');
     setDescription('');
+    setClosesAt('');
   };
 
   const handleClose = () => {
@@ -24,13 +27,22 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }) {
     onClose();
   };
 
+  const openPicker = (event) => {
+    try {
+      event.currentTarget.showPicker();
+    } catch {}
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setCreating(true);
     try {
-      await toast.promise(createAnnouncementApi({ title, description }), {
+      const payload = { title, description };
+      if (closesAt) payload.closesAt = new Date(closesAt).toISOString();
+
+      await toast.promise(createAnnouncementApi(payload), {
         loading: 'Publishing…',
         success: 'Announcement published',
         error: (err) => getApiErrorMessage(err, 'Failed to create announcement'),
@@ -39,7 +51,6 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }) {
       onCreated?.();
       onClose();
     } catch {
-      // toast already surfaced the error
     } finally {
       setCreating(false);
     }
@@ -75,6 +86,24 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }) {
             rows={3}
             className="resize-none rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-black outline-none transition focus:border-black"
           />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="newClosesAt" className="text-xs font-medium text-gray-600">
+              Auto-close at (optional)
+            </label>
+            <input
+              id="newClosesAt"
+              type="datetime-local"
+              value={closesAt}
+              min={toDateTimeLocalValue()}
+              onChange={(e) => setClosesAt(e.target.value)}
+              onClick={openPicker}
+              className="cursor-pointer rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-black outline-none transition focus:border-black"
+            />
+            <p className="text-[11px] text-gray-400">
+              Leave blank to keep it open until you close it manually.
+            </p>
+          </div>
+
           <button
             type="submit"
             disabled={creating || !title.trim()}

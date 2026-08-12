@@ -26,6 +26,21 @@ export async function acknowledgeAnnouncementApi(id, { selfie, consent }) {
   return res.data;
 }
 
+export async function updateAnnouncementStatusApi(id, payload) {
+  const res = await apiClient.patch(`/announcements/${id}/status`, payload);
+  return res.data;
+}
+
+export function mergeAnnouncementUpdate(prev, updated) {
+  return {
+    ...prev,
+    ...updated,
+    closesAt: updated.closesAt ?? null,
+    closedAt: updated.closedAt ?? null,
+    closedBy: updated.closedBy ?? null,
+  };
+}
+
 export async function fetchAcknowledgements(id) {
   const res = await apiClient.get(`/announcements/${id}/acknowledgements`);
   return res.data;
