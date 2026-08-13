@@ -5,7 +5,7 @@ import { ChevronLeft, LogOut, Megaphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { logoutApi } from '@/lib/authApi';
 import { useUser } from '@/lib/useUser';
-import { getMsalInstance } from '@/lib/msal';
+import { redirectToLogout } from '@/lib/authConfig';
 import { getApiErrorMessage } from '@/lib/apiClient';
 
 export default function Header({ title, backHref }) {
@@ -15,13 +15,8 @@ export default function Header({ title, backHref }) {
   const handleLogout = async () => {
     try {
       await logoutApi();
-      const msal = getMsalInstance();
-      if (msal) {
-        const account = msal.getActiveAccount() ?? msal.getAllAccounts()[0];
-        if (account) await msal.clearCache({ account });
-      }
       await mutate(null, { revalidate: false });
-      router.replace('/signin');
+      redirectToLogout();
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Logout failed'));
     }

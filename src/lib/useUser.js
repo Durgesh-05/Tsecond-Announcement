@@ -20,7 +20,7 @@ const fetcher = async () => {
 export function useUser() {
   const { data, error, isLoading, mutate } = useSWR('/auth/me', fetcher, {
     shouldRetryOnError: false,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true,
   });
 
   return {
