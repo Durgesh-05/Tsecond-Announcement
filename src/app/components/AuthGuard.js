@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useUser } from '@/lib/useUser';
-import { redirectToLogin } from '@/lib/authConfig';
+import { redirectToLogin, TOOL_PERMISSION } from '@/lib/authConfig';
+import NoAccess from './NoAccess';
 
 export default function AuthGuard({ children }) {
   const { user, isLoading } = useUser();
@@ -16,6 +17,10 @@ export default function AuthGuard({ children }) {
 
   if (isLoading || !user) {
     return <AuthSkeleton />;
+  }
+
+  if (!(user.permissions ?? []).includes(TOOL_PERMISSION)) {
+    return <NoAccess />;
   }
 
   return children;
