@@ -1,29 +1,26 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/useUser';
+import { redirectToLogin, TOOL_PERMISSION } from '@/lib/authConfig';
+import NoAccess from './NoAccess';
 
 export default function AuthGuard({ children }) {
-  const router = useRouter();
   const { user, isLoading } = useUser();
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (isLoading || didRedirect.current) return;
+    if (isLoading || user || didRedirect.current) return;
+    didRedirect.current = true;
+    redirectToLogin();
+  }, [user, isLoading]);
 
-    if (!user) {
-      didRedirect.current = true;
-      router.replace('/signin');
-    }
-  }, [user, isLoading, router]);
-
-  if (isLoading) {
+  if (isLoading || !user) {
     return <AuthSkeleton />;
   }
 
-  if (!user) {
-    return null;
+  if (!(user.permissions ?? []).includes(TOOL_PERMISSION)) {
+    return <NoAccess />;
   }
 
   return children;
